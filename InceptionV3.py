@@ -132,7 +132,7 @@ LR_MAX = 5e-5
 LR_MIN = 1e-9
 LR_RAMPUP_EPOCHS = 5
 LR_SUSTAIN_EPOCHS = 15
-EPOCHS = 30
+EPOCHS = 50
 def lrfn(epoch):
     if epoch < LR_RAMPUP_EPOCHS:
         lr = (LR_MAX - LR_START) / LR_RAMPUP_EPOCHS * epoch + LR_START
@@ -160,7 +160,7 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 model.summary()
 
 start_time=time.time()
-history=model.fit_generator(train_dataset, validation_data=valid_dataset, epochs=30,callbacks=[checkpoint,lr_callback])
+history=model.fit_generator(train_dataset, validation_data=valid_dataset, epochs=EPOCHS,callbacks=[checkpoint,lr_callback])
 end_time=time.time()
 tt=end_time-start_time
 print("Total training time : ",tt)
