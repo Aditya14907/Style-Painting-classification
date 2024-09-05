@@ -54,7 +54,7 @@ of 224x224 pixels with 3 channels.
 
 
 # DenseNet161
-(DenseNet161)[https://arxiv.org/abs/1608.06993] is a deep convolutional neural network. Unlike traditional networks in which each layer is connected to output layer but in DenseNet every layer is connected every other layers of upcoming layers this also known feed-forward fashion. The architecture guarantees that each layer has a direct access to the gradients from the loss function and the original input signal, improving gradient descent and making network easier to learn for training.
+[DenseNet161](https://arxiv.org/abs/1608.06993) is a deep convolutional neural network. Unlike traditional networks in which each layer is connected to output layer but in DenseNet every layer is connected every other layers of upcoming layers this also known feed-forward fashion. The architecture guarantees that each layer has a direct access to the gradients from the loss function and the original input signal, improving gradient descent and making network easier to learn for training.
 
 ![image](https://github.com/user-attachments/assets/4bdb76b1-6ec7-4e1f-b6f1-ed04c763e058)
 
