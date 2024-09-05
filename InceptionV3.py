@@ -1,6 +1,7 @@
 import tensorflow as tf
 from keras import layers, Model
 from keras.preprocessing.image import ImageDataGenerator
+from keras.layers import BatchNormalization, Conv2D, Activation, Flatten, MaxPooling2D, Concatenate, Input, Softmax, Dense, GlobalAveragePooling2D,Add,ZeroPadding2D
 from keras.callbacks import Callback
 import os
 import numpy as np
@@ -25,22 +26,22 @@ from sklearn.utils import (
 from sklearn.utils.multiclass import type_of_target
 
 def conv2d_bn(x, filters, kernel_size, padding='same', strides=(1, 1), name=None):
-    x = layers.Conv2D(filters, kernel_size, strides=strides, padding=padding, use_bias=False, name=name)(x)
-    x = layers.BatchNormalization(axis=3, scale=False)(x)
-    x = layers.Activation('relu', name=name)(x)
+    x = Conv2D(filters, kernel_size, strides=strides, padding=padding, use_bias=False, name=name)(x)
+    x = BatchNormalization(axis=3, scale=False)(x)
+    x = Activation('relu', name=name)(x)
     return x
 
 def inception_v3(input_shape=(299, 299, 3), num_classes=12):
-    img_input = layers.Input(shape=input_shape)
+    img_input = Input(shape=input_shape)
 
     x = conv2d_bn(img_input, 32, (3, 3), strides=(2, 2), padding='valid')
     x = conv2d_bn(x, 32, (3, 3), padding='valid')
     x = conv2d_bn(x, 64, (3, 3))
-    x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
+    x = MaxPooling2D((3, 3), strides=(2, 2))(x)
 
     x = conv2d_bn(x, 80, (1, 1), padding='valid')
     x = conv2d_bn(x, 192, (3, 3), padding='valid')
-    x = layers.MaxPooling2D((3, 3), strides=(2, 2))(x)
+    x = MaxPooling2D((3, 3), strides=(2, 2))(x)
 
     for i in range(3):
         branch1x1 = conv2d_bn(x, 64, (1, 1))
@@ -52,7 +53,7 @@ def inception_v3(input_shape=(299, 299, 3), num_classes=12):
         branch3x3dbl = conv2d_bn(branch3x3dbl, 96, (3, 3))
         branch3x3dbl = conv2d_bn(branch3x3dbl, 96, (3, 3))
 
-        branch_pool = layers.AveragePooling2D((3, 3), strides=(1, 1), padding='same')(x)
+        branch_pool = AveragePooling2D((3, 3), strides=(1, 1), padding='same')(x)
         branch_pool = conv2d_bn(branch_pool, 32, (1, 1))
         x = layers.concatenate([branch1x1, branch5x5, branch3x3dbl, branch_pool], axis=3, name='mixed' + str(i))
 
@@ -69,9 +70,9 @@ def inception_v3(input_shape=(299, 299, 3), num_classes=12):
         branch7x7dbl = conv2d_bn(branch7x7dbl, 160, (7, 1))
         branch7x7dbl = conv2d_bn(branch7x7dbl, 192, (1, 7))
 
-        branch_pool = layers.AveragePooling2D((3, 3), strides=(1, 1), padding='same')(x)
+        branch_pool = AveragePooling2D((3, 3), strides=(1, 1), padding='same')(x)
         branch_pool = conv2d_bn(branch_pool, 192, (1, 1))
-        x = layers.concatenate([branch1x1, branch7x7, branch7x7dbl, branch_pool], axis=3, name='mixed' + str(i))
+        x = concatenate([branch1x1, branch7x7, branch7x7dbl, branch_pool], axis=3, name='mixed' + str(i))
 
     for i in range(7, 10):
         branch1x1 = conv2d_bn(x, 320, (1, 1))
@@ -79,22 +80,22 @@ def inception_v3(input_shape=(299, 299, 3), num_classes=12):
         branch3x3 = conv2d_bn(x, 384, (1, 1))
         branch3x3_1 = conv2d_bn(branch3x3, 384, (1, 3))
         branch3x3_2 = conv2d_bn(branch3x3, 384, (3, 1))
-        branch3x3 = layers.concatenate([branch3x3_1, branch3x3_2], axis=3)
+        branch3x3 = concatenate([branch3x3_1, branch3x3_2], axis=3)
 
         branch3x3dbl = conv2d_bn(x, 448, (1, 1))
         branch3x3dbl = conv2d_bn(branch3x3dbl, 384, (3, 3))
         branch3x3dbl_1 = conv2d_bn(branch3x3dbl, 384, (1, 3))
         branch3x3dbl_2 = conv2d_bn(branch3x3dbl, 384, (3, 1))
-        branch3x3dbl = layers.concatenate([branch3x3dbl_1, branch3x3dbl_2], axis=3)
+        branch3x3dbl = concatenate([branch3x3dbl_1, branch3x3dbl_2], axis=3)
 
-        branch_pool = layers.AveragePooling2D((3, 3), strides=(1, 1), padding='same')(x)
+        branch_pool = AveragePooling2D((3, 3), strides=(1, 1), padding='same')(x)
         branch_pool = conv2d_bn(branch_pool, 192, (1, 1))
-        x = layers.concatenate([branch1x1, branch3x3, branch3x3dbl, branch_pool], axis=3, name='mixed' + str(i))
+        x = concatenate([branch1x1, branch3x3, branch3x3dbl, branch_pool], axis=3, name='mixed' + str(i))
 
-    x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
-    x = layers.Dense(256,activation='relu')(x)
-    x = layers.Dropout(0.35)(x)
-    x = layers.Dense(num_classes, activation='softmax')(x)
+    x = GlobalAveragePooling2D(name='avg_pool')(x)
+    x = Dense(256,activation='relu')(x)
+    x = Dropout(0.35)(x)
+    x = Dense(num_classes, activation='softmax')(x)
 
     model = Model(img_input, x, name='inception_v3')
 
@@ -147,9 +148,8 @@ def lrfn(epoch):
     return lr
 
 train_dataset, valid_dataset = load_datasets('dataset/images/training', 'dataset/images/test', image_size=(299, 299), batch_size=32)
+
 filepath="/home/nithin12113109/my_space/model_weights/"+ "Inceptionv3.h5"
-
-
 checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='max')
 lr_callback = LearningRateScheduler(lrfn,verbose=False)
 
@@ -169,7 +169,6 @@ val_loss, val_acc = model.evaluate_generator(valid_dataset, verbose=0)
 
 y_pred = []
 Y_pred =[]
-
 for i in range(len(valid_dataset)):
         X, y = valid_dataset[i]
         preds = model.predict_on_batch(X)
