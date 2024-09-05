@@ -21,7 +21,7 @@ from sklearn.utils import (
     column_or_1d,
 )
 from sklearn.utils.multiclass import type_of_target
-from keras.layers import BatchNormalization, Conv2D, Activation, Flatten, MaxPooling2D, Concatenate, Input, Softmax, Dense, GlobalAveragePooling2D,Lambda
+from keras.layers import BatchNormalization, Conv2D, Activation, Flatten, MaxPooling2D, Concatenate, Input, Softmax, Dense, GlobalAveragePooling2D,Add,ZeroPadding2D
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import Callback
 from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score, accuracy_score
@@ -30,50 +30,50 @@ import itertools
 def identity_block(input_tensor, filters, kernel_size):
     filters1, filters2, filters3 = filters
 
-    x = layers.Conv2D(filters1, (1, 1), kernel_initializer='he_normal')(input_tensor)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = Conv2D(filters1, (1, 1), kernel_initializer='he_normal')(input_tensor)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
 
-    x = layers.Conv2D(filters2, kernel_size, padding='same', kernel_initializer='he_normal')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = Conv2D(filters2, kernel_size, padding='same', kernel_initializer='he_normal')(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
 
-    x = layers.Conv2D(filters3, (1, 1), kernel_initializer='he_normal')(x)
-    x = layers.BatchNormalization()(x)
+    x = Conv2D(filters3, (1, 1), kernel_initializer='he_normal')(x)
+    x = BatchNormalization()(x)
 
-    x = layers.add([x, input_tensor])
-    x = layers.Activation('relu')(x)
+    x = Add([x, input_tensor])
+    x = Activation('relu')(x)
     return x
 
 def conv_block(input_tensor, filters, kernel_size, strides=(2, 2)):
     filters1, filters2, filters3 = filters
 
-    x = layers.Conv2D(filters1, (1, 1), strides=strides, kernel_initializer='he_normal')(input_tensor)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = Conv2D(filters1, (1, 1), strides=strides, kernel_initializer='he_normal')(input_tensor)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
 
-    x = layers.Conv2D(filters2, kernel_size, padding='same', kernel_initializer='he_normal')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
+    x = Conv2D(filters2, kernel_size, padding='same', kernel_initializer='he_normal')(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
 
-    x = layers.Conv2D(filters3, (1, 1), kernel_initializer='he_normal')(x)
-    x = layers.BatchNormalization()(x)
+    x = Conv2D(filters3, (1, 1), kernel_initializer='he_normal')(x)
+    x = BatchNormalization()(x)
 
-    shortcut = layers.Conv2D(filters3, (1, 1), strides=strides, kernel_initializer='he_normal')(input_tensor)
-    shortcut = layers.BatchNormalization()(shortcut)
+    shortcut = Conv2D(filters3, (1, 1), strides=strides, kernel_initializer='he_normal')(input_tensor)
+    shortcut = BatchNormalization()(shortcut)
 
-    x = layers.add([x, shortcut])
-    x = layers.Activation('relu')(x)
+    x = Add([x, shortcut])
+    x = Activation('relu')(x)
     return x
 
 def ResNet50(input_shape, num_classes):
     img_input = Input(shape=input_shape)
 
-    x = layers.ZeroPadding2D(padding=(3, 3))(img_input)
-    x = layers.Conv2D(64, (7, 7), strides=(2, 2), padding='valid', kernel_initializer='he_normal')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Activation('relu')(x)
-    x = layers.MaxPooling2D((3, 3), strides=(2, 2), padding='same')(x)
+    x = ZeroPadding2D(padding=(3, 3))(img_input)
+    x = Conv2D(64, (7, 7), strides=(2, 2), padding='valid', kernel_initializer='he_normal')(x)
+    x = BatchNormalization()(x)
+    x = Activation('relu')(x)
+    x = MaxPooling2D((3, 3), strides=(2, 2), padding='same')(x)
 
     x = conv_block(x, [64, 64, 256], (3, 3), strides=(1, 1))
     x = identity_block(x, [64, 64, 256], (3, 3))
@@ -95,11 +95,11 @@ def ResNet50(input_shape, num_classes):
     x = identity_block(x, [512, 512, 2048], (3, 3))
     x = identity_block(x, [512, 512, 2048], (3, 3))
 
-    x = layers.GlobalAveragePooling2D()(x)
-    x = layers.Dense(256, activation='relu')(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.Dropout(0.35)(x)
-    x = layers.Dense(12, activation='softmax')(x)
+    x = GlobalAveragePooling2D()(x)
+    x = Dense(256, activation='relu')(x)
+    x = BatchNormalization()(x)
+    x = Dropout(0.35)(x)
+    x = Dense(12, activation='softmax')(x)
 
     model = models.Model(img_input, x, name='resnet50')
     return model
@@ -127,7 +127,6 @@ def load_datasets(train, test, image_size=(224, 224), batch_size=32):
         batch_size=batch_size,
         classes=sorted(os.listdir(test))
     )
-    
     return train_generator, validation_generator
 
 LR_START = 1e-5
@@ -149,6 +148,7 @@ def lrfn(epoch):
         cosine_decay = 0.5 * (1 + math.cos(phase))
         lr = (LR_MAX - LR_MIN) * cosine_decay + LR_MIN
     return lr
+    
 train_dataset, valid_dataset = load_datasets('dataset/images/training', 'dataset/images/test', image_size=(224, 224), batch_size=32)
 filepath="/home/nithin12113109/my_space/model_weights/"+ "resnet50.h5"
 #Model Checkpoint
@@ -188,7 +188,7 @@ y_true=np.array(valid_dataset.classes)
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix
 cm = metrics.confusion_matrix(y_true,y_pred)
-print(cm)
+
 from sklearn.metrics import precision_score
 precision = precision_score(y_true, y_pred, average='micro')
 from sklearn.metrics import recall_score
@@ -276,6 +276,7 @@ def top_k_accuracy_score(y_true, y_score, k, normalize=True, sample_weight=None,
 
 from sklearn.metrics import accuracy_score
 acc = accuracy_score(y_true, y_pred)
+
 top1_acc = top_k_accuracy_score(y_true,Y_pred,k=1)
 top5_acc = top_k_accuracy_score(y_true,Y_pred,k=5)  
 
