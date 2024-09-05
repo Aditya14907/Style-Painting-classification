@@ -100,6 +100,8 @@ def ResNet50(input_shape, num_classes):
     x = layers.BatchNormalization()(x)
     x = layers.Dropout(0.35)(x)
     x = layers.Dense(12, activation='softmax')(x)
+
+    model = models.Model(img_input, x, name='resnet50')
     return model
 
 def load_datasets(train, test, image_size=(224, 224), batch_size=32):
